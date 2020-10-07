@@ -1,0 +1,76 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+unsigned int h, m, s; float t;
+
+void setup() 
+{
+  lcd.begin(16, 2);
+  adc_init();
+  setTimer0();
+  h = 13; 
+  m = 4; 
+  s = 54;
+}
+
+void loop() {}
+
+ISR(TIMER1_COMPA_vect)
+{
+  t = (read_adc(0) * 0.004882814 - 0.5) * 100;
+  s = s + 1;
+  
+  if(s == 60){
+    m = m + 1; s = 0;
+    if(m == 60){
+    h = h + 1;  m = 0;
+    if(h == 24) h = 0;
+  	}
+  }
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.setCursor(6, 0);
+  lcd.print(t);
+  lcd.setCursor(12, 0);lcd.print((char)176);
+  lcd.setCursor(13, 0);lcd.print("C");
+  
+  lcd.setCursor(0, 1);
+  lcd.print("Ora: ");
+  lcd.setCursor(5, 1);
+  if(h < 10) {lcd.print("0"); lcd.setCursor(6, 1);}
+  lcd.print(h); lcd.setCursor(7, 1); lcd.print(":");
+  lcd.setCursor(8, 1);
+  if(m < 10) {lcd.print("0"); lcd.setCursor(9, 1);}
+  lcd.print(m); lcd.setCursor(10, 1); lcd.print(":");
+  lcd.setCursor(11, 1);
+  if(s < 10) {lcd.print("0"); lcd.setCursor(12, 1);}
+  lcd.print(s);
+}
+
+void setTimer0()
+{
+  cli();
+  TCCR1A = 0; TCCR1B = 0; TCCR1C = 0;
+  TCCR1B |= 1 << WGM12;
+  TCCR1B |= ((1 << CS10) | (1 << CS12));
+  OCR1A = 15624;
+  TIMSK1 |= 1 << OCIE1A;
+  sei();
+}
+
+void adc_init()
+{
+  ADCSRA |= ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0));
+  ADMUX |= (1<<REFS0);
+  ADCSRA |= (1<<ADEN);
+  ADCSRA |= (1<<ADSC);
+}
+
+uint16_t read_adc(uint8_t channel)
+{
+  ADMUX &= 0xf0;
+  ADMUX |= channel;
+  ADCSRA |= (1<<ADSC);
+  while(ADCSRA & (1<<ADSC));
+  return ADC;
+}
