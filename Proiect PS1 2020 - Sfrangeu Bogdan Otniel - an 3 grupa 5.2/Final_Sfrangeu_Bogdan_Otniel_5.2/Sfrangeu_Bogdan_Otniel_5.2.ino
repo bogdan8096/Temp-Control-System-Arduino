@@ -22,9 +22,9 @@ struct Parameter
   int tcool;
 };
 
-unsigned int menu = 0; bool sw = true;
+unsigned int menu = 0;
 unsigned int currentState[4] = {0, 0, 0, 0}, lastState[4] = {0, 0, 0, 0};
-volatile float temperature[3], t2set[3], k2set[3]; float lastTemperature;
+volatile float temperature[3], t2set[3], k2set[3]; unsigned int lastTemperature = 21;
 bool firstTime; Parameter param;
 float Err = 0.0, lastErr = 0.0, sumErr = 0.0, dErr = 0.0, dt = 1.0, output = 0.0;
 float moving_setpoint = 0.0; unsigned int uptime = 0;
@@ -38,6 +38,7 @@ void setup()
   pinMode(BUTTON_CANCEL, INPUT);
   pinMode(BUTTON_PREV, INPUT);
   pinMode(BUTTON_NEXT, INPUT);
+  eepromParam();
   print_menu(0);
 }
 
@@ -47,7 +48,7 @@ void loop()
   {
     int chk = DHT.read11(DHT11_PIN);
     temperature[1] = DHT.temperature;
-    if((temperature[1] < -50) && (temperature[1] > 50))
+    if((temperature[1] < -50) || (temperature[1] > 50))
     {
       temperature[1] = lastTemperature;
     }
@@ -77,15 +78,18 @@ void print_menu(unsigned int index)
     case 16: lcd.print("PID: KD"); break;
     case 17: lcd.print("PID: KI"); break;
     case 18: lcd.print("PID: KP"); break;
-    case 19: lcd.print("TSET="); lcd.print((int)temperature[0]); lcd.print("C "); 
-             lcd.print("TMP="); lcd.print((int)temperature[1]); lcd.print("C"); break;
+    case 19: if((temperature[1] > -50) && (temperature[1] < 55))
+            {
+              lcd.print("TSET="); lcd.print((int)temperature[0]); lcd.print("C "); 
+              lcd.print("TMP="); lcd.print((int)temperature[1]); lcd.print("C"); 
+            }break;
   }
   if((index >= 5) && (index <= 11)) lcd.print("CHANGE PARAMETER");
   lcd.setCursor(0, 1);
   switch(index)
   {
-    case 0: lcd.print("PS 1 - 2020"); break;
-    case 4: lcd.print("SYST DOWN: 00:00"); break;
+    case 0: lcd.print("PS 1 - 2021"); break;
+    case 4: lcd.print("SYSTEM DOWN"); break;
     case 5: lcd.print("TEMPERATURE"); break;
     case 6: lcd.print("HEAT TIME"); break;
     case 7: lcd.print("MANTAIN TIME"); break;
@@ -222,7 +226,12 @@ void PID()
   analogWrite(HEAT_PIN, int(output));
   lastErr = Err;
 }
-void resetPID(){Err = 0.0; lastErr = 0.0; sumErr = 0.0; dErr = 0.0; moving_setpoint = 0.0; output = 0.0; analogWrite(HEAT_PIN, 0);}
+void resetPID()
+{
+  Err = 0.0; lastErr = 0.0; sumErr = 0.0; dErr = 0.0; 
+  moving_setpoint = 0.0; output = 0.0; 
+  analogWrite(HEAT_PIN, 0);
+}
 ISR(TIMER1_COMPA_vect)
 {
   if(firstTime == true) eepromSave();
