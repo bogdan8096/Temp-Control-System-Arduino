@@ -1,4 +1,4 @@
-# PS1_2021_Sfrangeu: Smart Temperature Control System using Arduino
+# Smart Temperature Control System using Arduino
 
 <img src="https://github.com/BogdanSfrangeu/PS1_2021_Sfrangeu/blob/a54e2120a30546041737c93950f09fd6b29f7555/Project.png" width=100% height=100%>
 
